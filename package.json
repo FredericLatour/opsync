@@ -1,0 +1,33 @@
+{
+  "name": "opsync",
+  "module": "src/cli.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "bun build --compile --minify src/cli.ts --outfile dist/opsync",
+    "build:linux": "bun build --compile --minify --target=bun-linux-x64 src/cli.ts --outfile dist/opsync-linux-x64",
+    "build:linux-arm": "bun build --compile --minify --target=bun-linux-arm64 src/cli.ts --outfile dist/opsync-linux-arm64",
+    "test": "bun test tests",
+    "lint": "biome check src tests tooling",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun run lint && bun run test",
+    "release:build": "bun run tooling/build-release.ts",
+    "test:integration": "bun run tooling/integration.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.9",
+    "@types/bun": "1.4.5",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "commander": "15.1.0",
+    "zod": "4.6.7"
+  },
+  "version": "2.0.0",
+  "description": "Database and n8n backup, restore and transfer CLI",
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "packageManager": "bun@1.4.5"
+}

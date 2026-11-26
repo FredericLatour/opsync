@@ -1,0 +1,74 @@
+# Dependencies and build output
+node_modules/
+/dist/
+/out/
+/opsync
+/dbsync
+*.tgz
+
+# Local configuration and secrets (examples stay tracked)
+.env
+.env.*
+!.env.example
+!.env.*.example
+opsync.toml
+.opsync.toml
+opsync.*.toml
+.opsync.*.toml
+dbsync.toml
+.dbsync.toml
+*.pem
+*.key
+*.p12
+*.pfx
+/.aws/
+/.codex/
+/.agents/
+/.archify/
+
+# Database dumps, archives and backup payloads
+*.sql
+*.sql.gz
+*.dump
+*.dump.gz
+*.tar
+*.tar.gz
+*.zip
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+workflows.json
+credentials.json
+backupdata/
+backups/
+staging_*/
+restore_*/
+
+# Local container overrides and data
+compose.override.yml
+compose.override.yaml
+docker-compose.override.yml
+docker-compose.override.yaml
+/data/
+
+# Test output, caches and logs
+/test-*/
+/test-config.toml
+coverage/
+*.lcov
+logs/
+*.log
+report.*.json
+.cache/
+.eslintcache
+*.tsbuildinfo
+
+# Editors and operating systems
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Interrupted atomic backup writes
+.opsync-write-*/

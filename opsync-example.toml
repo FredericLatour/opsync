@@ -1,0 +1,154 @@
+# opsync-example.toml
+# ─────────────────────────────────────────────────────────────────────────────
+# Copy this file to .opsync.toml (or opsync.toml) and fill in your real values.
+# The real config file should be in .gitignore (it contains secrets).
+#
+# opsync searches for the config file in this order:
+#   1. ./.opsync.toml       (project-level dotfile, takes priority)
+#   2. ./opsync.toml        (project-level file)
+#   3. ~/.opsync.toml       (user-level dotfile fallback)
+#   4. ~/opsync.toml        (user-level file fallback)
+#
+# Secrets can be supplied via environment variables using ${ENV_VAR} interpolation
+# (escape a literal dollar-brace as $${LITERAL}). Unset variables fail fast.
+# [s3.<label>] profiles also fall back to AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+# AWS_SESSION_TOKEN, AWS_REGION / AWS_DEFAULT_REGION, and S3_ENDPOINT /
+# AWS_ENDPOINT_URL_S3 / AWS_ENDPOINT_URL when omitted.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ── Database connections ──────────────────────────────────────────────────────
+# Each [db.<label>] block defines a MySQL or PostgreSQL server reachable by that label.
+# Use the label on the command line: opsync db backup-s3 prod, opsync db restore-s3 local
+#
+# Extra fields (e.g. adapter, theme) are silently ignored — safe to share this
+# file with other tools such as Harlequin.
+
+[db.prod]
+host = "db.example.com"
+port = 3306
+database = "my_database"
+user = "backup_user"
+password = "changeme"
+
+[db.dev]
+host = "db-dev.example.com"
+port = 3306
+database = "my_database"
+user = "backup_user"
+password = "changeme"
+
+[db.local]
+host = "localhost"
+port = 3306
+database = "my_database"
+user = "root"
+password = ""
+
+
+# Profiles use addresses and ports as seen by the native client.
+# Inside a database container, use 127.0.0.1 and the internal port, not a host-mapped port.
+[db.postgres]
+dialect = "pg"
+host = "127.0.0.1"
+port = 5432
+database = "example"
+user = "backup_user"
+password = "replace-me"
+# container = "my-postgres-container"
+
+# ── S3-compatible storage ─────────────────────────────────────────────────────
+# Each [s3.<label>] block defines an S3-compatible storage target.
+# Works with AWS S3, Garage, MinIO, Backblaze B2, Cloudflare R2, etc.
+# Use the label in [backup_s3].s3, [backup_n8n].s3, or override on the CLI with --s3 <label>.
+
+[s3.prod]
+accessKeyId = "your-access-key-id"
+secretAccessKey = "your-secret-access-key"
+endpoint = "https://s3.example.com"
+region = "us-east-1"                       # or a custom name, e.g. "garage"
+bucket = "my-backups"
+
+[s3.test]
+accessKeyId = "your-test-access-key-id"
+secretAccessKey = "your-test-secret-access-key"
+endpoint = "http://localhost:9000"              # e.g. local MinIO for development
+region = "us-east-1"
+bucket = "test-bucket"
+
+# Example using environment variables (uncomment to use in CI/containers):
+# [s3.ci]
+# bucket = "my-backups"
+# # accessKeyId, secretAccessKey, sessionToken, region, and endpoint fall back to:
+# # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN,
+# # AWS_REGION / AWS_DEFAULT_REGION, S3_ENDPOINT / AWS_ENDPOINT_URL_S3 / AWS_ENDPOINT_URL
+# # You can also interpolate explicitly anywhere in TOML, e.g. password = "${PROD_DB_PASSWORD}".
+
+
+# ── Rolling retention defaults ────────────────────────────────────────────────
+# Used by both db and n8n backup commands when --rolling is specified.
+
+[rolling]
+# Number of daily backup files to keep per prefix.
+keep_last = 15
+
+# Number of monthly compressed (.sql.gz / .tar.gz) backups to keep per prefix.
+# Set to 0 to disable monthly backups entirely.
+keep_months = 12
+
+# Subfolder or key prefix for daily backups (default: "daily")
+daily = "daily"
+
+# Subfolder or key prefix for monthly backups (default: "monthly")
+monthly = "monthly"
+
+
+# ── Folder backup defaults ────────────────────────────────────────────────────
+# Used by opsync db backup-folder and opsync db restore-folder.
+
+[backup_folder]
+# Destination directory for backups.
+dir = "/var/backups/mysql"
+
+# Tables to always exclude from folder backups (can be extended with --ignore-tables).
+ignore_tables = ["activity_log", "sessions", "cache"]
+
+
+# ── S3 backup defaults ────────────────────────────────────────────────────────
+# Used by opsync db backup-s3 and opsync db restore-s3.
+
+[backup_s3]
+# S3 configuration label to use (references [s3.<label>] above).
+s3 = "prod"
+
+# Optional key prefix within the S3 bucket (e.g. "mysql/prod")
+prefix = "mysql/prod"
+
+# Local staging directory for temporary dump files before upload.
+tmp_dir = "/tmp/opsync"
+
+# Tables to always exclude from S3 backups (can be extended with --ignore-tables).
+ignore_tables = ["activity_log", "sessions", "cache"]
+
+
+# ── n8n backup defaults ───────────────────────────────────────────────────────
+# Used by opsync n8n backup-s3 / restore-s3 and opsync n8n backup-folder / restore-folder.
+
+[backup_n8n]
+# S3 configuration label to use (references [s3.<label>] above).
+s3 = "prod"
+
+# Optional destination directory for `opsync n8n backup-folder` and `restore-folder`.
+# dir = "/var/backups/n8n"
+
+# Optional key prefix within the S3 bucket (e.g. "n8n" or "n8n/prod")
+prefix = "n8n"
+
+# Local staging directory for temporary archive packaging before upload.
+tmp_dir = "/tmp/opsync"
+
+# Optional container name override (if omitted, detects a unique running n8n container)
+# container = "n8n"
+
+# Optional user override; default is the container configured user.
+# user = "1000:1000"

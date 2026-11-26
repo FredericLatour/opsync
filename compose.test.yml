@@ -1,0 +1,55 @@
+# Disposable fixtures only. Garage exposes an ephemeral loopback port to Bun.
+services:
+  garage:
+    image: dxflrs/garage:v2.3.0
+    command: [/garage, server, --single-node, --default-bucket]
+    environment:
+      GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_DEFAULT_ACCESS_KEY:?Set by tooling/integration.ts}
+      GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_DEFAULT_SECRET_KEY:?Set by tooling/integration.ts}
+      GARAGE_DEFAULT_BUCKET: opsync-fixture
+    ports:
+      - "127.0.0.1::3900"
+    volumes:
+      - ./tests/fixtures/garage.toml:/etc/garage.toml:ro
+    tmpfs:
+      - /var/lib/garage
+    healthcheck:
+      test: [CMD, /garage, status]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: opsync-fixture-only
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  mysql:
+    image: mysql:8.0.46
+    environment:
+      MYSQL_ROOT_PASSWORD: opsync-fixture-only
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysql -h 127.0.0.1 -u root -e "SELECT 1"']
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.34.6
+    environment:
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+    tmpfs:
+      - /home/node/.n8n:uid=1000,gid=1000,mode=0700
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://127.0.0.1:5678/healthz/readiness").then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))']
+      interval: 2s
+      timeout: 5s
+      retries: 60
